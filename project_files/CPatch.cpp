@@ -227,9 +227,6 @@ void FixCrashes()
     // fix driver kill bug sprint pressed
     patch::SetUChar(0x62F223, 0);
 
-    // disable ped to player conversations.
-    patch::Nop(0x53C127, 10);
-
     // fix drown in vehicle crash
     patch::SetUChar(0x4BC6C1 + 0, 0xB0);
     patch::SetUChar(0x4BC6C1 + 1, 0x00);
