@@ -4,7 +4,7 @@
 void CPatch::TemporaryPatches()
 {
     // implementation of my patch.lua script
-   // patch::SetFloat(0x8A5B20, 0.0f); // disable traffic
+    //patch::SetFloat(0x8A5B20, 0.0f); // disable traffic
     CTrain::DisableRandomTrains(0); // disable trains
     patch::SetUChar(0x8A5B28, false); // disable EMS
     CPlane::SwitchAmbientPlanes(false); // disable ambient planes
@@ -12,6 +12,10 @@ void CPatch::TemporaryPatches()
     //patch::Nop(0x53C1C1, 5); // disable CCarCtrl::GenerateRandomCars
     patch::Nop(0x434272, 5); // disable CPlane::DoPlaneGenerationAndRemoval
     patch::SetUShort(0x8D477C, 0); // disable spawn 537 train
+
+    // no random stuff from spawning
+    patch::SetUChar(0x42B7D0, 0xC3); // emegencies 
+    patch::SetUChar(0x6CD2F0, 0xC3); // planes
 }
 
 void CPatch::PatchFramerate()
@@ -91,6 +95,7 @@ void PatchStreaming()
     patch::SetUChar(0x74805A, 1);
     patch::Nop(0x74542B, 8);
     patch::Nop(0x53EA88, 6);
+    patch::Nop(0x748A8D, 6); //alt+tab fix
 
     // fix cutscene crash
     patch::Nop(0x40EC56, 5);
@@ -125,6 +130,22 @@ void PatchPools()
 
     //Inc objects pool
     patch::SetUChar(0x551098, 0x02);
+}
+
+void __declspec(naked) AnimCrashFixHook()
+{
+    __asm
+    {
+        push edi;
+        mov edi, [esp + 8];	// unk_arg0
+        test edi, edi;
+        jz exitFn
+            mov eax, 0x4D41C5;	// continuation for function
+        jmp eax;
+    exitFn:
+        pop edi;
+        ret;
+    }
 }
 
 void FixCrashes()
@@ -205,6 +226,23 @@ void FixCrashes()
 
     // fix driver kill bug sprint pressed
     patch::SetUChar(0x62F223, 0);
+
+    // disable ped to player conversations.
+    patch::Nop(0x53C127, 10);
+
+    // fix drown in vehicle crash
+    patch::SetUChar(0x4BC6C1 + 0, 0xB0);
+    patch::SetUChar(0x4BC6C1 + 1, 0x00);
+    patch::Nop(0x4BC6C1 + 2, 1);
+
+    // fix animtable crash
+    patch::RedirectJump(0x4D41C0, AnimCrashFixHook);
+
+    // handbrake bugfix
+    patch::Nop(0x540040, 6);
+    patch::SetUChar(0x540040 + 6, 0x85);
+    patch::SetUChar(0x540040 + 7, 0xC9); // test eax, eax
+    patch::SetUChar(0x540040 + 8, 0x74); // jz
 }
 
 #define SCANCODE_SIZE 8*20000
